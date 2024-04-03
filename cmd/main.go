@@ -26,8 +26,8 @@ func main() {
 	legalMoves := calcLegalMoves(&board, currentPlayer)
 	for {
 		propagateLegalMoves(&board, legalMoves)
-		fmt.Printf("Current player: %s\n", playerString(currentPlayer))
 		fmt.Print(boardToString(&board))
+		fmt.Printf("Current player: %s\n", playerString(currentPlayer))
 		placeTile(getMove(legalMoves), &board, currentPlayer)
 		fmt.Println()
 		clearLegalMoves(&board, legalMoves)
@@ -43,13 +43,12 @@ func main() {
 			}
 		}
 	}
-	winner := calcWinner(&board)
-	if winner == Empty {
+	fmt.Print(boardToString(&board))
+	if winner := calcWinner(&board); winner == Empty {
 		fmt.Println("Tie game!")
 	} else {
 		fmt.Printf("%s player wins!\n", playerString(winner))
 	}
-
 }
 
 func oppositePlayer(currentPlayer Tile) Tile {
@@ -215,22 +214,26 @@ func calcWinner(board *[8][8]Tile) Tile {
 }
 
 func boardToString(board *[8][8]Tile) string {
-	var boardString string = " 01234567\n"
+	var boardString string = "   0  1  2  3  4  5  6  7\n ┌──┬──┬──┬──┬──┬──┬──┬──┐\n"
 	for j := 0; j < len(board[0]); j++ {
 		boardString += fmt.Sprint(j)
 		for i := 0; i < len(board); i++ {
+			boardString += "│"
 			switch board[i][j] {
 			case Empty:
-				boardString += "┼"
+				boardString += "  "
 			case Dark:
-				boardString += "○"
+				boardString += "⚫"
 			case Light:
-				boardString += "●"
+				boardString += "⚪"
 			case Legal:
-				boardString += "?"
+				boardString += "??"
 			}
 		}
-		boardString += "\n"
+		boardString += "│\n"
+		if j < len(board[0])-1 {
+			boardString += " ├──┼──┼──┼──┼──┼──┼──┼──┤\n"
+		}
 	}
-	return boardString
+	return boardString + " └──┴──┴──┴──┴──┴──┴──┴──┘\n"
 }
