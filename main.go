@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type Vec struct {
 	x int
@@ -22,15 +25,24 @@ func main() {
 	board[3][4] = Dark
 	board[4][3] = Dark
 	board[4][4] = Light
+
 	currentPlayer := Dark
 	legalMoves := calcLegalMoves(&board, currentPlayer)
+
 	for {
 		propagateLegalMoves(&board, legalMoves)
-		fmt.Print(boardToString(&board))
-		fmt.Printf("Current player: %s\n", playerString(currentPlayer))
-		placeTile(getMove(legalMoves), &board, currentPlayer)
-		fmt.Println()
+
+		printGame(&board, currentPlayer)
+
+		move, quit := getMove(legalMoves)
+		if quit {
+			fmt.Println("Goodbye!")
+			return
+		}
+		placeTile(move, &board, currentPlayer)
+
 		clearLegalMoves(&board, legalMoves)
+
 		currentPlayer = oppositePlayer(currentPlayer)
 		legalMoves = calcLegalMoves(&board, currentPlayer)
 		// If the current player has no legal moves, their turn is skipped
@@ -43,12 +55,24 @@ func main() {
 			}
 		}
 	}
+
+	ClearTerm()
 	fmt.Print(boardToString(&board))
 	if winner := calcWinner(&board); winner == Empty {
 		fmt.Println("Tie game!")
 	} else {
 		fmt.Printf("%s player wins!\n", playerString(winner))
 	}
+}
+
+func printGame(board *[8][8]Tile, currentPlayer Tile) {
+	ClearTerm()
+	fmt.Print(boardToString(board))
+	fmt.Printf("    Current player: %s\n\n", playerString(currentPlayer))
+}
+
+func ClearTerm() {
+	fmt.Printf("\033[2J\033[H")
 }
 
 func oppositePlayer(currentPlayer Tile) Tile {
@@ -169,24 +193,32 @@ func flipWalk(move Vec, dir Vec, board *[8][8]Tile, currentPlayer Tile) {
 
 // getMove prints out a list of legal moves and allows the current player to
 // select from one of them, returns the selected legal move.
-//
-// BUG: Scans until number is found in input, should scan once and clear input.
-// BUG: Error message prints multiple times when non-integer inputs are given.
-func getMove(legalMoves []Vec) Vec {
+func getMove(legalMoves []Vec) (Vec, bool) {
 	fmt.Println("Your legal moves:")
 	for i, move := range legalMoves {
-		fmt.Printf("%d. %v\n", i+1, move)
+		fmt.Printf("  %d. %v\n", i+1, move)
 	}
-	var i int
-	fmt.Print("Enter a number to select your move >> ")
-	for {
-		_, err := fmt.Scan(&i)
-		if err == nil && i > 0 && i <= len(legalMoves) {
-			break
-		}
-		fmt.Print("That is not a valid number, try again >> ")
+	fmt.Printf("Enter a number to select your move (0 to quit) >> ")
+	choice := getUserInt(0, len(legalMoves))
+	if choice == 0 {
+		return Vec{0, 0}, true
 	}
-	return legalMoves[i-1]
+	return legalMoves[choice-1], false
+}
+
+// getUserInt reads input from a scanner and returns the result if it is an int
+// in the range low <= x <= high. Prompts the user to attempt again if input
+// cannot be intepreted as an int in given range.
+func getUserInt(low int, high int) int {
+	var input string
+	fmt.Scanln(&input)
+	inputInt, err := strconv.Atoi(input)
+	for err != nil || low > inputInt || inputInt > high {
+		fmt.Printf("Error, please enter a number in the range %d to %d >> ", low, high)
+		fmt.Scanln(&input)
+		inputInt, err = strconv.Atoi(input)
+	}
+	return inputInt
 }
 
 // calcWinner counts the tiles of each colour on the board and determines who
@@ -214,9 +246,9 @@ func calcWinner(board *[8][8]Tile) Tile {
 }
 
 func boardToString(board *[8][8]Tile) string {
-	var boardString string = "   0  1  2  3  4  5  6  7\n ┌──┬──┬──┬──┬──┬──┬──┬──┐\n"
+	var boardString string = "    0  1  2  3  4  5  6  7\n  ┌──┬──┬──┬──┬──┬──┬──┬──┐\n"
 	for j := 0; j < len(board[0]); j++ {
-		boardString += fmt.Sprint(j)
+		boardString += fmt.Sprint(j) + " "
 		for i := 0; i < len(board); i++ {
 			boardString += "│"
 			switch board[i][j] {
@@ -232,8 +264,8 @@ func boardToString(board *[8][8]Tile) string {
 		}
 		boardString += "│\n"
 		if j < len(board[0])-1 {
-			boardString += " ├──┼──┼──┼──┼──┼──┼──┼──┤\n"
+			boardString += "  ├──┼──┼──┼──┼──┼──┼──┼──┤\n"
 		}
 	}
-	return boardString + " └──┴──┴──┴──┴──┴──┴──┴──┘\n"
+	return boardString + "  └──┴──┴──┴──┴──┴──┴──┴──┘\n"
 }
