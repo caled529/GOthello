@@ -22,7 +22,7 @@
       apps = {
         default = {
           type = "app";
-          program = "${self.packages."${system}".default}";
+          program = "${self.packages."${system}".default}/bin/gothello";
         };
       };
       devShells = with pkgs; {
